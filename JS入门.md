@@ -480,3 +480,287 @@ StringBuilder.prototype = {
 	})();
 ```
 
+#### 16.改变函数内部this指针的指向函数(bind、apply、call)
+
+- apply与call基本一致，改变函数的内部指向，第一个参数都是表示要把this改变成的那个对象,两者的区别是apply的第二个参数为数组，而call需要把参数一个个列出来。
+
+- bind改变参数后会返回一个新函数，但是不会立即执行
+
+  ```javascript
+  //自定义bind
+  Function.prototype.Bind = function(obj){
+      let that = this;
+      let args = [].slice.call(arguments,1);
+      return function(){
+          args = args.concat([].slice.call(arguments));
+          return that.apply(obj,args);
+      }
+  }
+  
+  Function.prototype.bind = function(obj){
+      let func = this;
+      let args = [].slice.call(arguments,1);
+      let temp = function(){};
+      let fn = function(){
+          args = args.concat([].slice.call(arguments));
+          return func.apply(this instanceof temp?this:obj,args);
+      }
+      temp.prototype = func.prototype;
+      fn.prototype = new temp();
+      return fn;
+  }
+  //自定义apply方法
+  Function.prototype.myApply = function(obj,args){
+      args = args||[];
+     // let res;
+      obj.f = this;
+      let res = obj.f(...args);
+      delete obj.f;
+      return res;
+  }
+  //自定义call方法
+  Function.prototype.myCall = function(obj,...rest){
+      obj.func = this;
+      let res = obj.func(...rest);
+      return res;
+  }
+  ```
+
+  #### 17.原型链的理解
+
+  1. 任何一个函数内部都有prototype属性，而这个prototype属性的值也是一个对象，该对象内部有个constructor属性
+  2. 对象与构造函数没有直接关系，对象没有prototype属性，但是对象的\__proto__属性指向构造函数的prototype
+  3. Object.prototype.\__proto__指向null
+  4. 而Function.constructor.constructor.constructor都为Function，因为Function.constructor=Function，所以这里形成一个闭环
+  5. 任何函数的最终原型都是Function.prototype,任何对象的最终原型都是Object.prototype,Object.ptototype.\__proto__是NULL
+
+  ```javascript
+  function Person(){};
+  let desc = Object.getOwnPropertyDescriptor(Person,"prototype");
+  console.log(desc);
+  console.log(Person.prototype.constructor); //prototype里面的constructor指向的是构造函数
+  console.log(Person.constructor);//而它自己的constructor指向的是Function
+  
+  //对象的prototype属性指向构造函数的prototype，只有__proto__指向构造函数的原型对象
+  let p = new Person();
+  console.log(p.__proto__===Person.prototype);//对象的__proto__指向构造函数的原型
+  console.log(p.prototype);//undefined,对象没有prototype属性
+  console.log(new Person().prototype);
+  console.log(p.__proto__.__proto__===Object.prototype);
+  /**
+   * true,p.__proto__指向Person.prototype,Person.prototype.__proto__指向Object.Prototype
+   * */
+  
+  console.log(p.__proto__.__proto__.constructor === Object);
+  /**
+   * true,p.__proto__.__proto__指向Object.prototype
+   */
+  
+  console.log(Person.prototype.__proto__);
+  /**
+   * Person.prototype.__proto__指向Object.prototype，所以有这些方法
+   * {  constructor: f Object(), 
+   *   toString: ...
+   *   hasOwnProperty: ...
+   *   isPrototypeOf: ...
+  *    ...
+  *  }
+   */
+  
+  console.log(new Person().__proto__===Person.prototype);//true
+  console.log(p.__proto__===Person.prototype);//true
+  /**
+   * 每一个实例的__proto__都指向构造函数的prototype,newPerson()也是一个实例 
+   */
+  
+  console.log(p instanceof Person);
+  console.log(p instanceof Object);
+  console.log(Person.prototype instanceof Object);
+  /**
+   * instanceof()检查实例的原型链中是否包含指定构造函数的原型
+   */
+  
+  console.log(Object.getPrototypeOf(Person.prototype)===Object.prototype);//true
+  console.log(Object.getPrototypeOf(p)===Person.prototype);//true
+  /**
+   * Object.getPrototypeof()会返回参数的__proto__指向的值
+   */
+  
+   Function.prototype.a = 'Function';
+   Object.prototype.a = 'Object';
+  console.log('-------');
+  console.log(Person.__proto__===Object.prototype);//flase
+   console.log(Person.__proto__===Function.prototype);//true
+   console.log(Person.constructor);//[Function: Function]
+   console.log(Person.prototype.constructor);// [Function: Person]
+  /**
+   * 函数的__proto__最终指向Function.prototype
+   * 可以理解成一个Person是一个函数，这个函数的__proto__指向Function.prototype,这个函数的construtor是指向Function
+   * 但是这个函数内部的prototype是一个对象，这个对象内部的__proto__是指向Object.prototype,这个对象的constructor是指向自己的也就是Person
+   */
+  
+  console.log(Object.constructor===Function);
+  /**
+   * true,Object.constructor指向Function
+   * 
+   */
+  
+   Function.prototype.a = 'Function';
+   Object.prototype.a = 'Object';
+   
+  
+   function Person() {};
+   var child = new Person();
+   console.log(Person.a);//Person是一个函数，会按照Person.__proto__去找，而Person.__proto__指向Function.prototype寻找
+   console.log(child.a);//child是一个对象，会按照Person.prototype.__ptoto__.prototype.__proto__去找
+   console.log(child.__proto__.__proto__.constructor.constructor===Function);
+   console.log(Object.prototype.__proto__);//null
+   console.log(Function.constructor.constructor.constructor);//Function
+   /**
+    * Object.prototype.__proto__指向null
+    * 而Function.constructor.constructor.constructor都为Function,函数的最终指向都为Function
+    */
+  
+   console.log(child.constructor);//[Function: Person]
+   console.log(Person.constructor===Function);//true
+  ```
+
+  #### 18.函数的继承
+
+  1. 原型链方式：对于某些引用类型数据，会被强制共享
+
+  ```javascript
+  function Father(){
+      this.class = ['math','english'];
+  };
+  function Child(){};
+  Child.prototype = new Father();
+  let c1 = new Child();
+  let c2 = new Child();
+  console.log(c1.class);//[ 'math', 'english' ]
+  c2.class.push('chinese');
+  console.log(c1.class);//[ 'math', 'english', 'chinese' ]
+  console.log(c2.class);//[ 'math', 'english', 'chinese' ]
+  /**
+   * 这里c1和c2是两个不同的对象，但是他们却公用一个引用类型，导致不想共享的资源被共享
+   * 任意改变c1或c2的值其他对象也都会跟着改变
+   */
+  ```
+
+  2. 盗用构造函数:子类对象的属性不会被共享，子类还能向父类传参数，但是子类不能使用父类的原型(prototype)上定义的方法
+
+  ```javascript
+  function Father(name){
+      this.color = ['blue','yellow'];
+      this.name = name;
+  }
+  function Child(name){
+      Father.call(this,name);
+      this.age = 22;
+  }
+  let c1 = new Child('c1');
+  let c2 = new Child('c2');
+  console.log(c1);//Child { color: [ 'blue', 'yellow' ], name: 'c1', age: 22 }
+  console.log(c2);//Child { color: [ 'blue', 'yellow' ], name: 'c2', age: 22 }
+  c1.color.pop();
+  console.log(c1);//Child { color: [ 'blue' ], name: 'c1', age: 22 }
+  console.log(c2);//Child { color: [ 'blue', 'yellow' ], name: 'c2', age: 22 }
+  /**
+   * 这里子类的两个对象各自有自己的color属性，并且子类还可以向父类传参数
+   */
+  ```
+
+  3. 组合继承:这里是原型链和盗用构造函数的结合，表面上看起来子类都有各自的属性，并且还可以使用父类的原型上的函数，但是实际上每个子类的[[proto]]的指向，也就是构造函数的prototype被每个子类共享，如下，实际上是每个子类构造函数的prototype里面也有一个color和name，只不过被子类对象中的color和name覆盖了，因此修改任意一个子类对象的构造函数的prototype内的属性，其他子类对象的构造函数的prototype也会被改变
+
+  ```javascript
+  function Father(name){
+      this.color = ['bule','red'];
+      this.name = name;
+  }
+  Father.prototype.sayName = function(){
+      console.log(this.name);
+  }
+  function Child(name){
+      Father.call(this,name);//调用第二次
+      this.age = 22;
+  };
+  Child.prototype = new Father();//调用一次
+  Child.prototype.constructor = Child;
+  Child.prototype.sayAge = function(){
+      console.log(this.age);
+  }
+  let c1 = new Child('c1');
+  let c2 = new Child('c2');
+  console.log(c1);//Father { color: [ 'bule', 'red'], name: 'c1', age: 22 }
+  console.log(c2);//Father { color: [ 'bule', 'red' ], name: 'c2', age: 22 }
+  c1.color.push('black');
+  console.log(c1);//Father { color: [ 'bule', 'red', 'black' ], name: 'c1', age: 22 }
+  console.log(c2);//Father { color: [ 'bule', 'red' ], name: 'c2', age: 22 }
+  c1.sayName();//c1
+  
+  console.log(c1.__proto__.color);//[ 'bule', 'red']
+  c1.__proto__.color.push('white');
+  console.log(c1.__proto__.color);//[ 'bule', 'red', 'white' ]
+  console.log(c2.__proto__.color);//[ 'bule', 'red', 'white' ]
+  ```
+
+  4. 原型式继承:这里的Object.create方法就是把参数对象给p1的\__proto__指向的prototype,当使用p1.color实际上p1并没有这个color属性，它是去它的\__proto__上面去找，找到了person.color，所以所有对象都共享这个color属性
+
+  ```javascript
+  let person = {
+      name:'xm',
+      color:['black','white','yellow']
+  }
+  //可以通过这种方式为p1添加自己的实例属性
+  let p1 = Object.create(person,{
+      age:{
+         value:23,
+         enumerable:true,
+          writable:true,
+          configurable:true
+      }
+  });
+  let p2 = Object.create(person);
+  console.log(p1)//{}
+  console.log(p1.__proto__);//{ name: 'xm', color: [ 'black', 'white', 'yellow' ] }
+  p1.color.push('bule');
+  console.log(p2.color);//color: [ 'black', 'white', 'yellow', 'bule' ]
+  console.log(p2.__proto__);//{ name: 'xm', color: [ 'black', 'white', 'yellow', 'bule' ] }
+  
+  //自定义实现Object.create()方法
+  function object(o){
+      function fn(){};
+      fn.prototype = o;
+      return new fn();
+  }
+  ```
+
+  5. 寄生式组合继承(利用一个空函数),主要是组合继承调用了两次父类的构造函数，资源消耗大
+     这里只会调用一次父类的构造函数，是因为这里把父类的prototype赋给了一个空函数fn的prototype,另一个是调用空函数的构造函数，资源消耗小
+
+  ```javascript
+  function extend(Child,Father){
+      let fn = function(){};
+      fn.prototype = Father.prototype;
+      Child.prototype = new fn();
+      Child.prototype.constructor = Child;
+      Child.uber = Father.prototype;
+  }
+  function Father(name){
+      this.name = name;
+      this.color = ['bule','yellow'];
+  }
+  Father.prototype.sayName = function(){
+      console.log(this.name);
+  }
+  function Child(name){
+     Father.call(this,name);//这里调用一次父类构造函数
+      this.age = 23;
+  }
+  Child.prototype.sayAge = function(){
+      console.log(this.age);
+  }
+  ```
+
+  
+
