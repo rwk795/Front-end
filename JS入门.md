@@ -212,7 +212,7 @@ greet('bob')
 - console.dir()
 
 ```javascript
-//用来对一个对象进行检查（inspect），并以易于阅读和打印的格式显示，也可用于输出DOM对象
+//用来对一个对象进行检查（inspect），并以易于阅读和打印的格式显示。这里需要注意的是，当用于输出DOM对象时，输出的是对象的引用，也就是当控制台打开之后看到的值，此时一定是有dom结构的
 
 console.log({f1: 'foo', f2: 'bar'})
 // Object {f1: "foo", f2: "bar"}
@@ -762,5 +762,97 @@ StringBuilder.prototype = {
   }
   ```
 
-  
+
+#### 19 setTimeout中的this
+
+定义：超时调用的代码都是在全局作用域中执行的，因此函数中this的值在非严格模式下指向window对象，在严格模式下是undefined。
+
+```javascript
+//调用对象的方法
+let obj = {
+    print :　function () {
+        setTimeout(function () {
+            console.log('setTimeout:'+this);
+        },0);
+    }
+}; 
+obj.print()//window，回调函数在全局作用域中执行
+
+//函数引用
+function say() {
+            console.log('setTimeout:'+this);
+        }
+let obj = {
+    print :　function () {
+        setTimeout(say,0);
+    }
+}; 
+obj.print()//window，say函数在全局作用域执行
+
+//有两个this的情况，一种是调用环境的this，这个this指向的就是当前调用的环境，也就是obj对象。延迟函数里面的this属于超时调用的代码，所以在全局作用域中执行
+let obj = {
+      say : function () {
+            console.log(this);  //延迟执行函数中的this
+        },
+    print :　function () {
+        setTimeout(this.say,0); //setTimeout调用环境中的this，指向调用者即obj
+    }
+}; 
+obj.print()//window
+
+let obj = {
+      say : function () {
+            console.log(this);  //延迟执行函数中的this
+        },
+      print :　function () {
+        setTimeout(this.say,0); //setTimeout调用环境中的this，指向调用者即obj
+    }
+}; 
+let func = obj.print;
+func() //无输出，这里因为func是一个全局方法，因此执行的时候调用环境的this指向window，而window里面没有say方法，因此没有输出
+
+//延迟函数里面的普通参数，调用时会沿着作用域链不断向上查找
+var a = 1;
+function func(){
+        let a = 2;
+        setTimeout(function(){
+            console.log(a);
+            console.log(this.a);
+    },0) 
+}
+func()//2 1
+
+var a = 1;
+function func(){
+       // let a = 2;
+        setTimeout(function(){
+            console.log(a);
+            console.log(this.a);
+    },0) 
+}
+func();//1 1
+
+//当setTimeout的第一个参数是以字符串的形式传入，那么执行时实际上是调用了eval()，而eval的执行环境是全局作用域
+var a = 2
+function say(a){
+  console.log(a)
+}
+function test(){
+  let a = 1;
+  setTimeout("say(a)",0)
+}
+test() //2
+
+var a = 2
+function test(){
+  let a = 1;
+  function say(a){
+    console.log(a)
+  }
+  setTimeout("say(a)",0)
+}
+test()//say is not defined，因为全局作用域下没有say方法
+```
+
+
 

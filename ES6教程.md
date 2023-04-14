@@ -614,7 +614,1066 @@ normalize方法可以接受一个参数来指`normalize的方式，参数的四�
    Symbol.keyfor(s2)//s1,Symbol.keyfor用来返回一个已经注册的Symbol类型的描述
    ```
 
-5. 
+
+#### 11 proxy
+
+```javascript
+//1.利用proxy创建一个代理对象，该代理对象相当于原对象与外界的交流方式，对原对象的操作会影响代理对象，对代理对象的操作也会影响原对象
+let obj = {
+    name:'rwk',
+    age:40
+}
+let proObj = new Proxy(obj,{
+    get:function(target,key,receiver){
+        console.log(target===obj);//obj
+        console.log(receiver===proObj);//proObj
+        if(key==='age')return target[key]-10;
+        else return target[key];
+    }
+})
+console.log(proObj['name']);
+console.log(proObj['age']);
+
+//proxy支持的拦截操作
+var proxyObj = new Proxy(obj, {
+    get: function(tagert,key,receiver){},
+    set: function(tagert,key,receiver){},
+    has: function(tagert,key){},
+    deleteProperty: function(tagert,key){},
+    ownKeys: function(tagert){},
+    getOwnPropertyDescriptor: function(tagert,key){},
+    defineProperty: function(tagert,key,desc){},
+    preventExtensions: function(tagert){},
+    getPrototypeOf: function(tagert){},
+    isExtensible: function(tagert){},
+    setPrototypeof: function(tagert,proto){},
+    apply: function(tagert,obj,args){},
+    construct: function(tagert,args){},
+})
+
+//访问不存在的参数名报错
+let proObj1 = new Proxy(obj,{
+    get:function(target,key,receiver){
+        if(key in target)return target[key];
+        else throw new Error(`该属性${key}不存在`);
+    }
+})
+console.log(proObj1['na'])//报错，该属性na不存在
+
+//允许数组下标为负值，并且允许超出数组长度
+let proObj2 = new Proxy([3,4,5],{
+    get:function(target,key,receiver){
+        if(key<0)return target[target.length+parseInt(key)];
+        else if (key>=target.length)return target[key-target.length];
+        else return target[key];
+    }
+})
+
+//实现链式计算
+let fn = {
+    pow2 : n=>n*n,
+    double : n=>n*2,
+    half : n=>n/2
+}
+function pipe(nums){
+    let func = [];
+    let obj = new Proxy({},{
+        get:function(target,key,receiver){
+            if(key==='end'){
+                return func.reduce((acc,cur)=>cur(acc),nums)
+            }
+            else{
+                func.push(fn[key]);
+                return obj;
+            }
+        }
+    })
+    return obj;
+}
+console.log(pipe(3).pow2.double.end);//18
+```
+
+#### 12 reflect
+
+1. Reflect.get(target, name, receiver) 
+
+   ```javascript
+   var myObject = {
+     foo: 1,
+     bar: 2,
+     get baz() {
+       return this.foo + this.bar;
+     },
+   }
+   Reflect.get(myObject, 'foo') // 1
+   Reflect.get(myObject, 'bar') // 2
+   Reflect.get(myObject, 'baz') // 3
+   
+   var myObject = {
+     foo: 1,
+     bar: 2,
+     get baz() {
+       return this.foo + this.bar;
+     },
+   };
+   var myReceiverObject = {
+     foo: 4,
+     bar: 4,
+   };
+   Reflect.get(myObject, 'baz', myReceiverObject) //8,如果name属性部署了读取函数（getter），则读取函数的this绑定receiver
+   ```
+
+2. Reflect.set(target, name, value, receiver)
+
+   ```javascript
+   var myObject = {
+     foo: 1,
+     set bar(value) {
+       return this.foo = value;
+     },
+   }
+   myObject.foo // 1
+   Reflect.set(myObject, 'foo', 2);
+   myObject.foo // 2
+   Reflect.set(myObject, 'bar', 3)
+   myObject.foo // 3
+   
+   var myObject = {
+     foo: 4,
+     set bar(value) {
+       return this.foo = value;
+     },
+   };
+   var myReceiverObject = {
+     foo: 0,
+   };
+   Reflect.set(myObject, 'bar', 1, myReceiverObject);//如果name属性设置了赋值函数，则赋值函数的this绑定receiver
+   myObject.foo // 4
+   myReceiverObject.foo // 1
+   ```
+
+3. Reflect.has(target, name)
+
+   ```javascript
+   var myObject = {
+     foo: 1,
+   };
+   // 旧写法
+   'foo' in myObject // true
+   // 新写法
+   Reflect.has(myObject, 'foo') // true
+   ```
+
+4. Reflect.deleteProperty(target, name)
+
+   ```javascript
+   const myObj = { foo: 'bar' };
+   // 旧写法
+   delete myObj.foo;
+   // 新写法
+   Reflect.deleteProperty(myObj, 'foo');
+   ```
+
+5. Reflect.construct(rarget,args)
+
+   ```javascript
+   function Greeting(name) {
+     this.name = name;
+   }
+   // new 的写法
+   const instance = new Greeting('张三');
+   // Reflect.construct 的写法
+   const instance = Reflect.construct(Greeting, ['张三']);
+   ```
+
+6. Reflect.getPrototypeOf(target)
+
+   ```javascript
+   const myObj = new FancyThing();
+   // 旧写法
+   Object.getPrototypeOf(myObj) === FancyThing.prototype;
+   // 新写法
+   Reflect.getPrototypeOf(myObj) === FancyThing.prototype;
+   ```
+
+7. Reflect.setPrototypeOf(target,prototype)
+
+   ```javascript
+   const myObj = {};
+   
+   // 旧写法
+   Object.setPrototypeOf(myObj, Array.prototype);
+   
+   // 新写法
+   Reflect.setPrototypeOf(myObj, Array.prototype);
+   
+   myObj.length // 0
+   ```
+
+8. Reflect.apply
+
+   ```javascript
+   const ages = [11, 33, 12, 54, 18, 96];
+   
+   // 旧写法
+   const youngest = Math.min.apply(Math, ages);
+   const oldest = Math.max.apply(Math, ages);
+   const type = Object.prototype.toString.call(youngest);
+   // 新写法
+   const youngest = Reflect.apply(Math.min, Math, ages);
+   const oldest = Reflect.apply(Math.max, Math, ages);
+   const type = Reflect.apply(Object.prototype.toString, youngest, []);
+   ```
+
+9. Reflect.defineProperty(target, name, desc)
+
+   ```javascript
+   function MyDate() {
+     /*…*/
+   }
+   // 旧写法
+   Object.defineProperty(MyDate, 'now', {
+     value: () => Date.now()
+   });
+   // 新写法
+   Reflect.defineProperty(MyDate, 'now', {
+     value: () => Date.now()
+   });
+   ```
+
+10. Reflect.getOwnPropertyDescriptor(target, name)
+
+    ```javascript
+    var myObject = {};
+    Object.defineProperty(myObject, 'hidden', {
+      value: true,
+      enumerable: false,
+    });
+    // 旧写法
+    var theDescriptor = Object.getOwnPropertyDescriptor(myObject, 'hidden');
+    // 新写法
+    var theDescriptor = Reflect.getOwnPropertyDescriptor(myObject, 'hidden');
+    ```
+
+11. Reflect.isExtensible(target)
+
+    ```javascript
+    const myObject = {};
+    
+    // 旧写法
+    Object.isExtensible(myObject) // true
+    // 新写法
+    Reflect.isExtensible(myObject) // true
+    ```
+
+12. Reflect.preventExtensions(target)
+
+    ```javascript
+    //Reflect.preventExtensions对应Object.preventExtensions方法，用于让一个对象变为不可扩展。它返回一个布尔值，表示是否操作成功。
+    var myObject = {};
+    // 旧写法
+    Object.preventExtensions(myObject) // Object {}
+    // 新写法
+    Reflect.preventExtensions(myObject) // true
+    ```
+
+13. Reflect.ownKeys(target)
+
+    ```javascript
+    //Reflect.ownKeys方法用于返回对象的所有属性，基本等同于Object.getOwnPropertyNames与Object.getOwnPropertySymbols之和。
+    var myObject = {
+      foo: 1,
+      bar: 2,
+      [Symbol.for('baz')]: 3,
+      [Symbol.for('bing')]: 4,
+    };
+    
+    // 旧写法
+    Object.getOwnPropertyNames(myObject)
+    // ['foo', 'bar']
+    Object.getOwnPropertySymbols(myObject)
+    //[Symbol(baz), Symbol(bing)]
+    
+    // 新写法
+    Reflect.ownKeys(myObject)
+    // ['foo', 'bar', Symbol(baz), Symbol(bing)]
+    ```
+
+#### 13 promise
+
+1. 解决了回调地狱
+
+   - 回调函数延迟绑定(回调函数不是直接返回的，而是通过then传入)
+
+   - 返回值穿透(我们会根据 then 中回调函数的传入值创建不同类型的Promise, 然后把返回的 Promise 穿透到外层, 以供后续的调用)
+
+   - 错误冒泡:最上面的错误会根据链式调用不断的往后面传，直到最后一个catch，不需要频繁的检查错误
+
+     ```javascript
+     readFilePromise('1.json').then(data => {
+         return readFilePromise('2.json');
+     }).then(data => {
+         return readFilePromise('3.json');
+     }).then(data => {
+         return readFilePromise('4.json');
+     }).catch(err => {
+       // xxx
+     })
+     ```
+
+2. 静态方法
+
+   ```javascript
+   //不管promise是fulfilled还是rejected都会执行
+   Promise.prototype.myFinally = function(onfinally) {
+     return this.then(res=>{
+       return Promise.resolve(onfinally()).then(() =>res);
+     },rej => {
+       return Promise.resolve(onfinally()).then(() => {throw rej});
+     })
+   }
+   Promise.myResolve = (p) => {
+     return new Promise((resolve,reject) => {
+       resolve(p);
+     })
+   }
+   Promise.myReject = (p) => {
+     return new Promise((resolve,reject) => {
+       reject(p);
+     })
+   }
+   //异步执行一组promise，有一个被rejected就返回rejected，全部fulfilled才会返回fulfilled
+   Promise.myAll = (promises) => {
+     let len = promises.length;
+     let count = 0;
+     let result = [];
+     return new Promise((resolve,reject) => {
+       promises.forEach(p => {
+         Promise.myResolve(p)
+         .then((res) => {
+           result.push(res);
+           count ++;
+           if(count === len)resolve(result);
+         },rej=>{
+           reject(rej)
+         })
+       });
+     })
+   }
+   //异步执行一组promise，返回一组表示promise对象状态的对象
+   Promise.myAllSettled = (promises) => {
+     let result = [];
+     let count = 0;
+     let len = promises.length;
+     return new Promise((resolve,reject) => {
+       promises.forEach((p)=>{
+         Promise.myResolve(p)
+         .then(res=>{
+           count++;
+           result.push(res);
+           if(count === len)resolve(result);
+         },rej => {
+           count++;
+           result.push(rej);
+           if(count === len)resolve(result);
+         })
+       })
+     })
+   }
+   //异步执行一组peomise，哪个最先执行完就返回那个状态
+   Promise.myRace = (promises) => {
+     return new Promise((resolve,reject) => {
+       promises.forEach(p=>{
+         Promise.myResolve(p)
+         .then(res => {
+           resolve(res);
+         },rej=>{
+           reject(rej);
+         })
+       })
+     })
+   }
+   ```
+
+3. promise数组串行执行
+
+   ```javascript
+   const p1 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p1');
+         resolve()
+       },1000)
+     })
+   }
+   const p2 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p2');
+         resolve()
+       },2000)
+     })
+   }
+   const p3 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p3');
+         resolve()
+       },3000)
+     })
+   }
+   let promises = [p1,p2,p3];
+   //1.采用async await
+   let execute1 = async (promises) => {
+      for(let i = 0;i<promises.length;i++) {
+        await Promise.resolve(promises[i]())
+      }
+   }
+   execute(promises)
+   
+   //2.采用reduce
+   let execute = async (promises) => {
+     promises.reduce((acc,cur) => {
+       return acc.then(() => cur())
+     },Promise.resolve())
+   }
+   execute(promises)
+   
+   //将数组中的每个promise的调用都放到上一个promise调用结束之后执行，这里也是promise可以实现链式调用的原理
+   const p1 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p1');
+         execute();
+         resolve()
+       },1000)
+     })
+   }
+   const p2 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p2');
+         execute();
+         resolve()
+       },1000)
+     })
+   }
+   const p3 = () => {
+     return new Promise((resolve,reject) => {
+       setTimeout(()=>{
+         console.log('p3');
+         execute();
+         resolve()
+       },1000)
+     })
+   }
+   let promises = [p1,p2,p3];
+   let execute = () => {
+     if(promises.length){
+       let p = promises.shift();
+       p();
+     }
+   }
+   execute()
+   ```
+
+   
+
+#### 14事件循环
+
+- 事件循环过程
+  1. 所有同步任务都在主线程上执行，形成一个执行栈
+  2. 主线程之外还有一个任务队列，只要异步任务有了执行结果，就往任务队列中加入一个事件
+  3. 一旦执行栈中的所有同步任务执行完毕，就会去任务队列看有没有需要执行的异步任务，有的话就结束等待状态，加入执行栈
+  4. 不断重复1-3过程
+
+- 宏任务与微任务
+
+  微任务：Promise等，
+  宏任务：setTimeout,setInterval,整个javascript代码，网络请求，文件读写完成事件，用户交互，渲染事件
+
+  在浏览器环境中：每一个宏任务里面都有一个微任务队列，先执行一个宏任务，然后再执行里面的所有微任务，再执行下一个宏任务以此类推
+
+- 代码示例
+
+  ```javascript
+  async function async1(){
+      console.log('async1 start')
+      await async2()
+      console.log('async1 end')
+  }
+  async function async2(){
+      console.log('async2')
+  }
+  console.log('script start')
+  setTimeout(function(){
+      console.log('setTimeout') 
+  },0)  
+  async1();
+  new Promise(function(resolve){
+      console.log('promise1')
+      resolve();
+  }).then(function(){
+      console.log('promise2')
+  })
+  console.log('script end')
+  /**
+  script start -> async start -> async2 -> promise1 -> script end 
+  ->async1 end ->promise2 -> setTimeout
+   **/
+  
+  //promise.resolve()和promise.reject()才是异步任务,他们异步执行then里面传进去的两个回调函数
+  
+  const async1 = async() => {
+      console.log('第一个async函数开始');
+      await async2();
+      console.log('第一个async函数结束');
+  }
+  const async2 = async() => {
+      console.log('第二个async函数执行');
+  }
+  console.log('开始执行');
+  setTimeout(() => {
+      console.log('setTimeout执行');
+  }, 0)
+  new Promise(resolve => {
+      console.log('promise执行');
+      for (var i = 0; i < 100; i++) {
+          i == 99 && resolve();
+      }
+  }).then(() => {
+      console.log('执行then函数')
+  });
+  async1();
+  console.log('结束');
+  /**
+  开始执行 -> promise执行 -> 第一个async函数开始 -> 第二个async函数执行 -> 结束 -> 执行then函数 -> 第一个async函数结束 -> setTimeout执行
+  */
+  ```
+
+#### 15.Generator
+
+- 可以理解为Generator 函数是一个状态机，封装了多个内部状态。next返回的是yield后面的表达式的值。
+
+  ```javascript
+  function* helloWorldGenerator() {
+    yield 'hello';
+    yield 'world';
+    return 'ending';
+  }
+  var hw = helloWorldGenerator();
+  hw.next()// { value: 'hello', done: false }
+  hw.next()// { value: 'world', done: false }
+  hw.next()// { value: 'ending', done: true }
+  hw.next()// { value: undefined, done: true }
+  ```
+
+- next方法的参数：yield表达式本身没有返回值，next方法可以带一个参数，该参数就会被当作上一个yield表达式的返回值。
+
+  ```javascript
+  function* foo(x) {
+    var y = 2 * (yield (x + 1));
+    var z = yield (y / 3);
+    return (x + y + z);
+  }
+  var a = foo(5);
+  a.next() // Object{value:6, done:false}
+  a.next() // Object{value:NaN, done:false}
+  a.next() // Object{value:NaN, done:true}
+  
+  var b = foo(5);
+  b.next() // { value:6, done:false }
+  b.next(12) // { value:8, done:false }，因为参数12被当作上一个yield的返回值，也就是y=2*12
+  b.next(13) // { value:42, done:true }，参数13被当作上一个yield的返回值，也就是z = 13 
+  /**
+  上面代码中，第二次运行next方法的时候不带参数，导致 y 的值等于2 * undefined（即NaN），除以 3 以后还是NaN，因此返回对象的value属性也等于NaN。第三次运行Next方法的时候不带参数，所以z等于undefined，返回对象的value属性等于5 + NaN + undefined，即NaN。
+  如果向next方法提供参数，返回结果就完全不一样了。上面代码第一次调用b的next方法时，返回x+1的值6；第二次调用next方法，将上一次yield表达式的值设为12，因此y等于24，返回y / 3的值8；第三次调用next方法，将上一次yield表达式的值设为13，因此z等于13，这时x等于5，y等于24，所以return语句的值等于42
+  */
+  ```
+
+- for...of循环：可以自动遍历 Generator 函数运行时生成的Iterator对象，且此时不再需要调用next方法
+
+  ```javascript
+  function* foo() {
+    yield 1;
+    yield 2;
+    yield 3;
+    yield 4;
+    yield 5;
+    return 6;
+  }
+  for (let v of foo()) {
+    console.log(v);
+  }
+  // 1 2 3 4 5，因为for...of循环会判断next返回的对象中的done属性，只有done属性为false才会执行循环
+  ```
+
+- Generator.prototype.throw：可以在函数体外抛出错误，在Generator函数体内捕获
+
+  ```javascript
+  var g = function* () {
+    try {
+      yield;
+    } catch (e) {
+      console.log('内部捕获', e);
+    }
+  };
+  var i = g();
+  i.next();
+  try {
+    i.throw('a');
+    i.throw('b');
+  } catch (e) {
+    console.log('外部捕获', e);
+  }
+  // 内部捕获 a
+  // 外部捕获 b
+  /**
+  上面代码中，遍历器对象i连续抛出两个错误。第一个错误被 Generator 函数体内的catch语句捕获。i第二次抛出错误，由于 Generator 函数内部的catch语句已经执行过了，不会再捕捉到这个错误了，所以这个错误就被抛出了 Generator 函数体，被函数体外的catch语句捕获。
+  */
+  
+  /**
+  当Generator执行过程中抛出错误，且没有被内部捕获，就不会再执行下去了。如果此后还调用next方法，将返回一个value属性等于undefined、done属性等于true的对象
+  */
+  function* g() {
+    yield 1;
+    console.log('throwing an exception');
+    throw new Error('generator broke!');
+    yield 2;
+    yield 3;
+  }
+  function log(generator) {
+    var v;
+    console.log('starting generator');
+    try {
+      v = generator.next();
+      console.log('第一次运行next方法', v);
+    } catch (err) {
+      console.log('捕捉错误', v);
+    }
+    try {
+      v = generator.next();
+      console.log('第二次运行next方法', v);
+    } catch (err) {
+      console.log('捕捉错误', v);
+    }
+    try {
+      v = generator.next();
+      console.log('第三次运行next方法', v);
+    } catch (err) {
+      console.log('捕捉错误', v);
+    }
+    console.log('caller done');
+  }
+  log(g());
+  // starting generator
+  // 第一次运行next方法 { value: 1, done: false }
+  // throwing an exception
+  // 捕捉错误 { value: 1, done: false }，这里是被外部捕获了
+  // 第三次运行next方法 { value: undefined, done: true }
+  // caller done
+  ```
+
+- Generator.prototype.return:返回给定的参数值，并且终结遍历 Generator 函数
+
+  ```javascript
+  function* gen() {
+    yield 1;
+    yield 2;
+    yield 3;
+  }
+  var g = gen();
+  g.next()        // { value: 1, done: false }
+  g.return('foo') // { value: "foo", done: true }
+  g.next()        // { value: undefined, done: true }
+  
+  /**
+  如果 Generator 函数内部有try...finally代码块，且正在执行try代码块，那么return()方法会导致立刻进入finally代码块，执行完以后，整个函数才会结束。
+  */
+  function* numbers () {
+    yield 1;
+    try {
+      yield 2;
+      yield 3;
+    } finally {
+      yield 4;
+      yield 5;
+    }
+    yield 6;
+  }
+  var g = numbers();
+  g.next() // { value: 1, done: false }
+  g.next() // { value: 2, done: false }
+  g.return(7) // { value: 4, done: false }
+  g.next() // { value: 5, done: false }
+  g.next() // { value: 7, done: true }
+  //上述代码调用return之后，立刻执行finally代码块，等finally执行完之后再执行return方法的返回值
+  ```
+
+- yield*表达式:用来在Generator内部遍历一个遍历器对象
+
+  ```javascript
+  //1.yield*表达式遍历
+  function* inner() {
+    yield 'hello!';
+  }
+  function* outer1() {
+    yield 'open';
+    yield inner();
+    yield 'close';
+  }
+  var gen = outer1()
+  gen.next().value // "open"
+  gen.next().value // 返回一个遍历器对象
+  gen.next().value // "close"
+  
+  
+  function* outer2() {
+    yield 'open'
+    yield* inner()
+    yield 'close'
+  }
+  var gen = outer2()
+  gen.next().value // "open"
+  gen.next().value // "hello!"
+  gen.next().value // "close"
+  
+  
+  //2.可以用for...of遍历yield*表达式
+  let delegatedIterator = (function* () {
+    yield 'Hello!';
+    yield 'Bye!';
+  }());
+  let delegatingIterator = (function* () {
+    yield 'Greetings!';
+    yield* delegatedIterator;
+    yield 'Ok, bye.';
+  }());
+  for(let value of delegatingIterator) {
+    console.log(value);
+  }
+  // "Greetings!
+  // "Hello!"
+  // "Bye!"
+  // "Ok, bye."
+  
+  //3.任何数据结构只要有 Iterator 接口，就可以被yield*遍历
+  let read = (function* () {
+    yield 'hello';
+    yield* 'hello';
+  })();
+  read.next().value // "hello"
+  read.next().value // "h"
+  ```
+
+#### 16 async
+
+- 可以看成Generator的语法糖，async必须结合await使用
+
+- 返回一个promise
+
+  ```javascript
+  //1.async函数的return的值会成为函数调用之后then方法的参数
+  async function f() {
+    return 'hello world';
+  }
+  
+  f().then(v => console.log(v))// "hello world"
+  
+  //2.async函数运行出错，会被then函数的第二个参数获取
+  async function f() {
+    throw new Error('出错了');
+  }
+  f().then(
+    v => console.log('resolve', v),
+    e => console.log('reject', e)
+  )//reject Error: 出错了
+  ```
+
+- 注意点
+
+  1. await命令后面的Promise对象，运行结果可能是rejected，所以最好把await命令放在try...catch代码块中
+  2. await必须放在async内部
+  3. 如果要执行循环的异步操作，不能使用foreach，可以用for循环
+
+#### 17 Class
+
+- 可以看作是构造函数的语法糖，本质上也就是function
+
+  ```javascript
+  class Point {
+    // ...
+  }
+  typeof Point // "function"
+  Point === Point.prototype.constructor // true
+  ```
+
+- getter与setter:class也支持getter和setter，并且与Object一样都是存在该class的prototype对象中的属性的 Descriptor 对象上
+
+  ```javascript
+  class MyClass {
+    constructor() {
+      // ...
+    }
+    get prop() {
+      return 'getter';
+    }
+    set prop(value) {
+      console.log('setter: '+value);
+    }
+  }
+  let inst = new MyClass();
+  inst.prop = 123;// setter: 123
+  inst.prop// 'getter'
+  ```
+
+- 静态方法与静态属性：class中支持静态方法和静态属性，都是只允许通过class直接访问，与实例对象无关。
+
+  注意：静态方法中的this指的是当前类而不是实例
+
+  ```javascript
+  class Foo {
+    static classMethod() {
+      return 'hello';
+    }
+  }
+  Foo.classMethod() // 'hello'
+  var foo = new Foo();
+  foo.classMethod()// TypeError: foo.classMethod is not a function
+  ```
+
+- 私有方法和私有属性:class中支持私有方法和私有属性，用#+方法名/属性名表示。
+
+  注意：私有属性可以通过in关键字判断
+
+- 静态块：在类的内部设置一个代码块，在类生成时运行且只运行一次，主要作用是对静态属性进行初始化
+
+  ```javascript
+  class C {
+    static x = 1;
+    static {
+      this.x; // 1
+      // 或者
+      C.x; // 1
+    }
+  }
+  ```
+
+- 注意点
+
+  1. 不存在变量提升
+
+  2. 支持name属性
+
+  3. 支持Generator函数
+
+  4. this
+
+  5. new.target：在class内部使用，返回class类，当子类继承父类时，new.target返回子类
+
+     ```javascript
+     //用来创建一个必须被继承才能使用的类
+     class Shape {
+       constructor() {
+         if (new.target === Shape) {
+           throw new Error('本类不能实例化');
+         }
+       }
+     }
+     class Rectangle extends Shape {
+       constructor(length, width) {
+         super();
+         // ...
+       }
+     }
+     var x = new Shape();  // 报错
+     var y = new Rectangle(3, 4);  // 正确
+     ```
+
+#### 18 ES Module
+
+- 特点
+
+  ```javascript
+  //1.编译时加载
+  // CommonJS模块，运行时加载本质就是先加载整个‘fs’模块，生成一个fs对象，再从对象中读取三个方法
+  let { stat, exists, readfile } = require('fs');
+  // ES6模块，编译时加载，这里的‘fs’不是模块，而是用export导出的指定的代码，不需要先运行生成一个对象
+  import { stat, exists, readFile } from 'fs';
+  
+  //2.动态绑定接口
+  export var foo = 'bar';
+  setTimeout(() => foo = 'baz', 500);//可以实时获取模块内部的值
+  
+  //输出的是只读接口，不允许修改，但是允许修改接口里面的属性
+  import {a} from './xxx.js'
+  a = {}; // Syntax Error : 'a' is read-only;
+  a.foo = 'foo'//合法的
+  ```
+
+- export与import的复合写法
+
+  ```javascript
+  export { foo, bar } from 'my_module';
+  // 可以简单理解为
+  import { foo, bar } from 'my_module';
+  export { foo, bar };
+  ```
+
+- Import():运行时加载，并且是异步的，返回一个promise
+
+  ```javascript
+  if (condition) {
+    import('moduleA').then(...);
+  } else {
+    import('moduleB').then(...);
+  }
+  ```
+
+#### 19 跨域
+
+1. postMessage(message, url)方法
+
+2. websocket
+
+3. 代理服务器：需要在服务端做额外开发，将跨域请求发送给同域下的服务器，由该服务器做http请求访问外域
+
+4. jsonp：因为<script><img><link>标签都可以跨域，这些标签链接的资源都是get方式访问的，所以jsonp也只能用于get请求。其实就是把请求放到一个<script>标签中，请求不光要传参数，还要传一个函数，该函数在前端进行声明，然后服务端返回一个执行函数，执行函数里面有需要的数据，这样浏览器就能拿到服务端的跨域数据了
+
+   ```javascript
+   function handleResponse(response) {
+     console.log(` You're at IP address ${response.ip}, 
+   	which is in ${response.city}, ${response.region_name}`); 
+   } 
+   let script = document.createElement("script"); 
+   script.src = "http://freegeoip.net/json/?callback=handleResponse"; document.body.insertBefore(script, document.body.firstChild);
+   ```
+
+5. cors：目前最通用的跨域方案，这里将请求分为简单请求和复杂请求
+
+   - 简单请求：必须满足下面两个条件。
+
+     1. 请求方法是head、get、post中的一种
+
+     2. 请求头信息只能包括Accept、Accept-Language、Content-Language、Last-Event-ID、Content-Type只包括三个值：application/x-www-form-urlencoded、multipart/form-data、text/plain
+
+        ```javascript
+        //简单请求会携带的额外头部origin
+        Origin: http://www.nczonline.net
+        如果服务器决定响应请求，那么应该发送 Access-Control-Allow-Origin 头部，包含相同的源； 或者如果资源是公开的，那么就包含"*"。比如：
+        Access-Control-Allow-Origin: http://www.nczonline.net
+        ```
+
+   - 复杂请求：除了简单请求以外的请求
+
+     1. option预检请求：其实就是首先询问服务器当前网页所在的域名是否在服务器的许可名单之中，请求头包括下面三个信息
+        1. Origin：与简单请求一样
+        2. Access-Control-Request-Method：请求准备使用的方法
+        3. Access-Control-Request-Header：请求希望自定义的头部
+     2. 预检通过之后会再次进行请求
+
+   #### 20 CSRF和XSS
+
+   - csrf攻击(跨站点请求伪造)
+
+     1. 当客户访问了一个安全的网站比如银行
+
+     2. 在访问银行的cookie还没有失效的情况下，又点击了一个钓鱼网站，该网站以用户的名义去访问之前的银行，银行以为还是用户去访问，钓鱼网站就可以对银行进行操作
+
+        ```javascript
+        例子: 
+        1. 一家银行的转账地址为: www.a.com/withdraw?from=A&to=B&amount=1000
+        2. 一个攻击者在www.b.com 放置代码为: <img src="www.a.com/withdraw?from=A&to=B&amount=1000" />
+         
+        例如A用户刚给B转完账，登录状态还没有失效，如果www.a.com没有安全措施，可能会让A损失1000元
+        ```
+
+     3. 攻击场景：
+
+        1. 自动get请求：当点击钓鱼网站，自动向某个服务器发送一个get请求(构造了一个url)
+        2. 自动post请求：钓鱼网站自己构造了一个表单，并且会携带用户的cookie自动发送这个表单
+        3. 手动get请求：钓鱼网站上可以有一个链接，点击后自动发送携带cookie的请求
+
+     4. 防范
+
+        - 用同源策略可以防止csrf攻击，因为钓鱼网站的请求大部分来自外域，因此禁止外域访问资源。
+        - 设置cookie的Samesite属性为'strict'，在strict模式下，浏览器完全禁止第三方请求携带Cookie。
+        - csrf token：浏览器第一次访问服务端的时候，服务费会发送一个token携带在cookie里，之后浏览器再次访问，需要将token放在请求头，但是csrf只是借用了cookie，并不能获取cookie信息，也就无法获取token。
+        - referer首部：该首部会表明请求的来源，服务端通过这个字段判断请求来源是否安全，但是这个不够安全，因为referer完全是由浏览器管理的，可以被修改。
+
+   - xss攻击(跨站脚本)
+
+     1. 存储型：就是把恶意脚本存储在服务端的数据库中，比如服务端会存储客户评论，要是我在评论中添加一段恶意脚本，服务端会把这段脚本存储起来然后返回给浏览器执行。
+     2. 反射型：恶意脚本作为网络请求的一部分，会把一段恶意脚本放在访问服务器的url的参数中，当服务器收到url得到参数后把这个脚本反射到html文档中并返回给客户端，客户端解析html就会执行被插入的恶意脚本。
+     3. 文档型：文档型不经过服务器，是拦截数据传输过程的数据，并修改其内容。
+     4. 防范方法：
+        - 对所有用户的输入都进行转义(可以防范文档型和反射型)
+        - csp(内容安全策略):(白名单策略，明确告诉客户端可以加载哪些外部资源)
+          1. 限制加载其他域的资源，这样即使黑客插入来一个js文件，这个文件也没法被加载
+          2. 禁止向第三方域提交资源，防止收到xss攻击之后资料不会泄露
+          3. 提供上报机制，帮助我们尽快发现有哪些xss攻击，以便尽快修复问题
+        - httpOnly(是服务器通过http响应头设置的)
+          使用了httponly的cookie，只会在http请求时被使用，不能被任何js代码获取，因为xss攻击一般都是为了获取用户cookie
+
+   #### 21对象深拷贝的问题
+
+   1. bject.assign()可以实现浅拷贝
+
+   2. JSON.parse(JSON.stringify()),这可以实现简单的深拷贝，但是有几个缺点：
+
+      - 无法解决循环引用，无法拷贝特殊的对象，比如RegExp, Date, Set, Map等，无法拷贝函数
+
+      - JSON.stringify会自动忽略undefined,function,symbol
+
+        <img src="/Users/rwk/Library/Application Support/typora-user-images/image-20210421200003339.png" alt="image-20210421200003339" style="zoom:50%;" />
+
+   3. 解决循环引用以及特殊对象的深拷贝
+
+      ```javascript
+      function deepClone(obj, hash = new WeakMap()) {
+        if (typeof obj !== 'object' || obj == null) {
+          // 如果是基本数据类型或者null，直接返回
+          return obj;
+        }
+        if (hash.has(obj)) {
+          // 如果已经拷贝过该对象，则直接返回之前拷贝的结果，防止循环引用导致死循环
+          return hash.get(obj);
+        }
+        let result;
+        if (obj instanceof RegExp) {
+          // 对正则对象进行特殊处理
+          result = new RegExp(obj.source, obj.flags);
+  } else if (obj instanceof Date) {
+          // 对Date对象进行特殊处理
+       result = new Date(obj.getTime());
+        } else if (typeof obj === 'function') {
+          // 对函数进行特殊处理
+          result = function(...args) {
+            return obj.apply(this, args);
+          };
+        } else {
+          // 处理复杂类型
+          result = Array.isArray(obj) ? [] : {};
+          // 将当前对象存储到哈希表中
+          hash.set(obj, result);
+          for (let key in obj) {
+            // 递归调用，实现深拷贝
+            result[key] = deepClone(obj[key], hash);
+          }
+        }
+        return result;
+      }
+      ```
+      
+      
+   
+   
+
+
+
+
+
+
 
 
 
