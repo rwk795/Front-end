@@ -1628,54 +1628,37 @@ console.log(pipe(3).pow2.double.end);//18
    3. 解决循环引用以及特殊对象的深拷贝
 
       ```javascript
-   function deepClone(obj, hash = new WeakMap()) {
-        if (typeof obj !== 'object' || obj == null) {
-          // 如果是基本数据类型或者null，直接返回
-          return obj;
-        }
-        if (hash.has(obj)) {
-          // 如果已经拷贝过该对象，则直接返回之前拷贝的结果，防止循环引用导致死循环
-          return hash.get(obj);
-        }
-        let result;
-        if (obj instanceof RegExp) {
-          // 对正则对象进行特殊处理
-          result = new RegExp(obj.source, obj.flags);
-     } else if (obj instanceof Date) {
-          // 对Date对象进行特殊处理
-       result = new Date(obj.getTime());
-        } else if (typeof obj === 'function') {
-       // 对函数进行特殊处理
-          result = function(...args) {
-            return obj.apply(this, args);
-          };
-        } else {
-          // 处理复杂类型
-          result = Array.isArray(obj) ? [] : {};
-          // 将当前对象存储到哈希表中
-          hash.set(obj, result);
-          for (let key in obj) {
-            // 递归调用，实现深拷贝
-            result[key] = deepClone(obj[key], hash);
+        function deepClone(obj, hash = new WeakMap()) {
+          if (typeof obj !== 'object' || obj == null) {
+            // 如果是基本数据类型或者null，直接返回
+            return obj;
           }
+          if (hash.has(obj)) {
+            // 如果已经拷贝过该对象，则直接返回之前拷贝的结果，防止循环引用导致死循环
+            return hash.get(obj);
+          }
+          let result;
+          if (obj instanceof RegExp) {
+            // 对正则对象进行特殊处理
+            result = new RegExp(obj.source, obj.flags);
+          } else if (obj instanceof Date) {
+            // 对Date对象进行特殊处理
+            result = new Date(obj.getTime());
+          } else if (typeof obj === 'function') {
+            // 对函数进行特殊处理
+            result = function(...args) {
+              return obj.apply(this, args);
+            };
+          } else {
+            // 处理复杂类型
+            result = Array.isArray(obj) ? [] : {};
+            // 将当前对象存储到哈希表中
+            hash.set(obj, result);
+            for (let key in obj) {
+              // 递归调用，实现深拷贝
+              result[key] = deepClone(obj[key], hash);
+            }
+          }
+          return result;
         }
-        return result;
-      }
       ```
-      
-      
-   
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
