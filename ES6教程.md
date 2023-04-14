@@ -1625,12 +1625,10 @@ console.log(pipe(3).pow2.double.end);//18
 
       - JSON.stringify会自动忽略undefined,function,symbol
 
-        <img src="/Users/rwk/Library/Application Support/typora-user-images/image-20210421200003339.png" alt="image-20210421200003339" style="zoom:50%;" />
-
    3. 解决循环引用以及特殊对象的深拷贝
 
       ```javascript
-      function deepClone(obj, hash = new WeakMap()) {
+   function deepClone(obj, hash = new WeakMap()) {
         if (typeof obj !== 'object' || obj == null) {
           // 如果是基本数据类型或者null，直接返回
           return obj;
@@ -1643,11 +1641,11 @@ console.log(pipe(3).pow2.double.end);//18
         if (obj instanceof RegExp) {
           // 对正则对象进行特殊处理
           result = new RegExp(obj.source, obj.flags);
-  } else if (obj instanceof Date) {
+     } else if (obj instanceof Date) {
           // 对Date对象进行特殊处理
        result = new Date(obj.getTime());
         } else if (typeof obj === 'function') {
-          // 对函数进行特殊处理
+       // 对函数进行特殊处理
           result = function(...args) {
             return obj.apply(this, args);
           };
