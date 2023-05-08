@@ -1039,7 +1039,7 @@ console.log(pipe(3).pow2.double.end);//18
    }
    execute(promises)
    
-   //将数组中的每个promise的调用都放到上一个promise调用结束之后执行，这里也是promise可以实现链式调用的原理
+   //3将数组中的每个promise的调用都放到上一个promise调用结束之后执行，这里也是promise可以实现链式调用的原理
    const p1 = () => {
      return new Promise((resolve,reject) => {
        setTimeout(()=>{
