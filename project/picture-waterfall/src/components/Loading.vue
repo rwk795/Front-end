@@ -19,8 +19,8 @@ export default {
   display: flex;
   .box {
     position: relative;
-    width: 30px;
-    height: 30px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
     border: 10px solid #ccc;
     border-right-color: transparent;

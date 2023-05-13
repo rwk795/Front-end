@@ -1,58 +1,67 @@
 <template>
-  <div class="waterFall">
-    <div v-if="showLayer" class="waterFall-layer">
-      <div
-        class="container"
-        :style="{ width: getLayerWidth + 'px', height: getLayerHeight + 'px' }"
-      >
-        <div class="container-close" @click="closeLayer">X</div>
-        <div class="container-card">
-          <div
-            :class="[
-              'container-card-change',
-              { 'container-card-hide': isFirst },
-            ]"
-            @click="lastPic"
-          >
-            &lt;
-          </div>
-          <transition
-            type="transition"
-            name="next"
-            :leave-active-class="`animate__animated animate__fadeOut${leave} next-leave-active`"
-            :enter-active-class="`animate__animated animate__fadeIn${enter} next-enter-active`"
-          >
-            <Card
-              :key="curIndex"
-              :img-url="curItem"
-              :card-width="getLayerHeight * 0.9"
-              class="container-card-content"
-            />
-          </transition>
-          <div
-            :class="[
-              'container-card-change',
-              { 'container-card-hide': isFinally },
-            ]"
-            @click="nextPic"
-          >
-            &gt;
-          </div>
-        </div>
-      </div>
+  <div class="box">
+    <div class="header">
+      <span>米忽悠社区</span>
+      <div class="uploadBtn" @click="goUpLoad">发布图片</div>
     </div>
-    <ReFlash @refreshEmit="refreshEmit" @loadMoreEmit="loadMoreEmit">
-      <div class="wrap">
-        <div v-for="(item, index) in picList" :key="index">
-          <Card
-            :img-url="item"
-            :card-width="getCardWidth"
-            @picBig="openLayer(item, index)"
-          ></Card>
+    <div class="waterFall">
+      <div v-if="showLayer" class="waterFall-layer">
+        <div
+          class="container"
+          :style="{
+            width: getLayerWidth + 'px',
+            height: getLayerHeight + 'px',
+          }"
+        >
+          <div class="container-close" @click="closeLayer">X</div>
+          <div class="container-card">
+            <div
+              :class="[
+                'container-card-change',
+                { 'container-card-hide': isFirst },
+              ]"
+              @click="lastPic"
+            >
+              &lt;
+            </div>
+            <transition
+              type="transition"
+              name="next"
+              :leave-active-class="`animate__animated animate__fadeOut${leave} next-leave-active`"
+              :enter-active-class="`animate__animated animate__fadeIn${enter} next-enter-active`"
+            >
+              <Card
+                :key="curIndex"
+                :img-url="curItem"
+                :card-width="getLayerHeight * 0.9"
+                class="container-card-content"
+              />
+            </transition>
+            <div
+              :class="[
+                'container-card-change',
+                { 'container-card-hide': isFinally },
+              ]"
+              @click="nextPic"
+            >
+              &gt;
+            </div>
+          </div>
         </div>
-        <!-- <button @click="loadMore">ssss</button> -->
       </div>
-    </ReFlash>
+      <ReFlash @refreshEmit="refreshEmit" @loadMoreEmit="loadMoreEmit">
+        <div class="wrap">
+          <div v-for="(item, index) in picList" :key="index">
+            <Card
+              :img-url="item"
+              :card-width="getCardWidth"
+              @picBig="openLayer(item, index)"
+            ></Card>
+          </div>
+          <!-- <button @click="loadMore">ssss</button> -->
+        </div>
+      </ReFlash>
+    </div>
   </div>
 </template>
 <script>
@@ -101,7 +110,7 @@ export default {
     this.getPicList()
   },
   methods: {
-    getPicList(index = 0, count = 8, isRefresh = true) {
+    getPicList(index = 0, count = 20, isRefresh = true) {
       this.$axios({
         method: 'get',
         url: '/api/getPicList', // 接口地址
@@ -146,65 +155,95 @@ export default {
     loadMoreEmit() {
       this.getPicList(this.picListIndex, 6, false)
     },
+    goUpLoad() {
+      this.$router.push('/upLoadPage')
+    },
   },
 }
 </script>
 
 <style lang="less" scoped>
-.waterFall {
-  &-layer {
-    position: fixed;
-    z-index: 999;
-    top: 0;
-    left: 0;
-    background: rgba(255, 255, 255, 0.8);
+.box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  .header {
+    height: 35px;
+    line-height: 35px;
     width: 100%;
-    height: 100%;
-    overflow: hidden;
-    .container {
-      position: relative;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      background-color: black;
-      &-close {
-        color: white;
-        position: absolute;
-        right: 10px;
-        font-size: 1.5rem;
-      }
-      &-card {
-        display: flex;
-        flex-direction: row;
+    position: fixed;
+    font-size: 15px;
+    z-index: 1;
+    font-weight: bold;
+    text-align: center;
+    background: #ffffff;
+    .uploadBtn {
+      position: absolute;
+      display: inline-block;
+      width: 100px;
+      height: 30px;
+      line-height: 30px;
+      top: 2.5px;
+      right: 3px;
+      background-color: #ffe14d;
+    }
+  }
+  .waterFall {
+    margin-top: 35px;
+    &-layer {
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      background: rgba(255, 255, 255, 0.8);
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      .container {
         position: relative;
-        align-items: center;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        &-change {
-          z-index: 1;
+        background-color: black;
+        &-close {
           color: white;
+          position: absolute;
+          right: 2px;
+          font-size: 7px;
+        }
+        &-card {
+          display: flex;
+          flex-direction: row;
           position: relative;
-          font-size: 3rem;
-        }
-        &-hide {
-          visibility: hidden;
-        }
-        &-content {
-          position: relative;
-          margin: 0 auto;
-        }
-        .next-enter-active {
-          transition: all 3s linear;
+          align-items: center;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          &-change {
+            z-index: 1;
+            color: white;
+            position: relative;
+            font-size: 12px;
+          }
+          &-hide {
+            visibility: hidden;
+          }
+          &-content {
+            position: relative;
+            margin: 0 auto;
+          }
+          .next-enter-active {
+            transition: all 3s linear;
+          }
         }
       }
     }
-  }
-  .wrap {
-    display: flex;
-    flex-direction: row;
-    flex-grow: 1;
-    flex-wrap: wrap;
+    .wrap {
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      flex-wrap: wrap;
+    }
   }
 }
 </style>
