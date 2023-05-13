@@ -22,4 +22,20 @@ function getQuery(url, name) {
   }
   return name ? res[name] : res
 }
-// Mock.mock('/api/test2', 'post', require('./data/test2.json'))
+// Mock.mock('/api/sendPicList', 'post', ({ url, body }) => {
+//   const data = JSON.parse(body)
+//   readFile(filePath, 'utf-8', (err, data) => {
+//     if (err) throw err
+//     // let res = JSON.parse(data)
+//     // // 需要得到id，id为数组中最后一个图书的id+1
+//     // let index = res[res.length - 1].id + 1
+//     // // 向obj对象中添加id属性
+//     // obj.id = index
+//     // res.push(obj)
+//     // 写入到json文件中 --> 需要把res转为字符串写入到json文件
+//     writeFile(filePath, data, (err) => {
+//       if (err) throw err
+//       console.log('添加成功')
+//     })
+//   })
+// })

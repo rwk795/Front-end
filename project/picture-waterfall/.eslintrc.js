@@ -26,4 +26,7 @@ module.exports = {
     // 'space-in-brackets': [2, 'never'],
     // 'space-infix-ops': 2,
   },
+  parserOptions: {
+    parser: 'babel-eslint',
+  },
 }
