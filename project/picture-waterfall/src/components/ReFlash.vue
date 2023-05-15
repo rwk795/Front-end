@@ -43,25 +43,21 @@ export default {
       if (window.scrollY <= 0) {
         this.refreshLoginStatus = 'refresh'
       } else {
-        console.log('refreshLoginStatus')
         this.refreshLoginStatus = 'loading'
       }
     },
     touchMoveHandle(e) {
-      if (this.isShow.isRefresh) return
+      // if (this.isShow.isRefresh || this.isShow.isLoading) return
       let dis = e.touches[0].pageY - this.startPos.pageY
-      if (this.refreshLoginStatus === 'refresh') {
+      if (this.refreshLoginStatus === 'refresh' && !this.isShow.isRefresh) {
         if (dis <= 0) return
         this.isShow.isRefresh = true
         this.$refs.refreshLogin.style.transform = `translateY(${
           dis < 100 ? dis : 100
         }px)`
-      } else {
+      } else if (!this.isShow.isLoading) {
         if (dis >= 0) return
         this.isShow.isLoading = true
-        // this.$refs.refreshLogin.style.transform = `translateY(${
-        //   dis < 100 ? dis : 100
-        // }px)`
       }
       // if (this.refreshLoginStatus === 'refresh' && dis > 0) {
       //   //下拉刷新成立条件
@@ -73,21 +69,22 @@ export default {
       // }
     },
     async touchEnd(e) {
-      if (!this.isShow.isRefresh && !this.isShow.isLoading) return
+      // if (this.isLoadingDate) return
+      // if (this.isShow.isRefresh || this.isShow.isLoading) return
       if (this.isShow.isRefresh) {
         //异步加载数据
+        this.isShow.isRefresh = false
         await this.$emit('refreshEmit')
         //松手后加载动画消失，并且内容页回到原位置
-        this.isShow.isRefresh = false
         this.$refs.refreshLogin.style.transform = `translateY(0px)`
         this.refreshLoginStatus = 'normal'
-      } else {
-        console.log('this.$emit()')
+      } else if (this.isShow.isLoading) {
+        this.isShow.isLoading = false
         await this.$emit('loadMoreEmit')
         //松手后加载动画消失，并且内容页回到原位置
-        this.isShow.isLoading = false
         // this.$refs.refreshLogin.style.transform = `translateY(0px)`
         this.refreshLoginStatus = 'normal'
+        this.isLoadingData = false
       }
     },
   },
