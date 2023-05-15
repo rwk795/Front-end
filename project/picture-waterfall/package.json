@@ -13,6 +13,7 @@
     "core-js": "^3.8.3",
     "eslint-plugin-prettier": "^4.2.1",
     "fs": "^0.0.1-security",
+    "mongoose": "^7.1.1",
     "qs": "^6.11.1",
     "querystring": "^0.2.1",
     "vue": "^2.6.14",

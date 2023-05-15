@@ -1,15 +1,13 @@
 <template>
   <div class="box">
-    <!-- <div v-if="uploadFiles.length"> -->
     <div v-for="(item, index) in uploadFiles" :key="index">
       <UploadCard
-        :img-url="item"
+        :img-url="item.url"
         :index="index"
         class="card"
         @removePicList="removePicList(index)"
       />
     </div>
-    <!-- </div> -->
     <input
       id="upload"
       ref="inputFile"
@@ -36,18 +34,29 @@ import UploadCard from './UploadCard.vue'
 export default {
   name: 'UploadComp',
   components: { UploadCard },
+  props: {
+    submited: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data: () => {
     return {
       files: [],
       uploadFiles: [],
     }
   },
+  watch: {
+    submited: function () {
+      this.submited && this.submitPic()
+    },
+  },
   methods: {
     handleFileChange(e) {
       this.files = [...e.target.files]
       if (this.fileIsIllegal(this.files)) {
         this.$refs.inputFile.value = null
-        console.log(this.$message.show('上传图片只能是 png、jpeg、jpg格式!'))
+        this.$message.show('上传图片只能是 png、jpeg、jpg格式!')
       } else {
         this.send(this.files)
       }
@@ -55,7 +64,6 @@ export default {
     fileIsIllegal(files) {
       return files.some((item) => {
         const fileNameSuf = item.name.split('.').slice(-1)[0] //获取文件名后缀
-        // return fileFormat.indexOf(fileNameSuf) === -1
         return !fileFormat.includes(fileNameSuf)
       })
     },
@@ -72,7 +80,10 @@ export default {
           var reader = new FileReader()
           reader.readAsDataURL(file)
           reader.onload = () => {
-            resolve(reader.result)
+            resolve({
+              url: reader.result,
+              status: 0,
+            })
           }
           reader.onerror = () => {
             reject('图片加载失败')
@@ -84,6 +95,18 @@ export default {
     },
     removePicList(index) {
       this.uploadFiles.splice(index, 1)
+    },
+    submitPic() {
+      this.$axios({
+        method: 'post',
+        url: '/submitList', // 接口地址
+        data: this.uploadFiles,
+      }).then((res) => {
+        // this.$message.show('提交成功!')
+        // console.log('---成功')
+        this.uploadFiles = []
+        this.$emit('submitSuccess')
+      })
     },
   },
 }

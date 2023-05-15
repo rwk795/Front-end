@@ -88,6 +88,7 @@ export default {
     enter: 'Right', //切换图片方向
     picList: [],
     picListIndex: 0,
+    isLoadingData: false, //控制同时多次请求图片
   }),
   watch: {
     curIndex: function () {
@@ -111,20 +112,26 @@ export default {
   },
   methods: {
     getPicList(index = 0, count = 20, isRefresh = true) {
+      if (this.isLoadingData) return
+      this.isLoadingData = true
       this.$axios({
         method: 'get',
-        url: '/api/getPicList', // 接口地址
+        url: '/picture_list', // 接口地址
         params: {
           index,
           count,
         },
       }).then((picList) => {
+        const urlList = picList.map((item) => {
+          return item.url
+        })
         if (isRefresh) {
-          this.picList = picList
+          this.picList = urlList
         } else {
-          this.picList.push(...picList)
+          this.picList.push(...urlList)
         }
-        this.picListIndex = index + picList.length
+        this.picListIndex = index + urlList.length
+        this.isLoadingData = false
       })
     },
     //打开蒙层
@@ -132,10 +139,13 @@ export default {
       this.curIndex = index
       this.curItem = item
       this.showLayer = true
+      document.body.style.overflow = 'hidden'
+      // overflow: hidden;
     },
     //关闭蒙层
     closeLayer() {
       this.showLayer = false
+      document.body.style.overflow = 'auto'
     },
     lastPic() {
       this.curIndex--
@@ -153,7 +163,7 @@ export default {
       this.getPicList()
     },
     loadMoreEmit() {
-      this.getPicList(this.picListIndex, 6, false)
+      this.getPicList(this.picListIndex, 20, false)
     },
     goUpLoad() {
       this.$router.push('/upLoadPage')
@@ -203,13 +213,14 @@ export default {
         position: relative;
         left: 50%;
         top: 50%;
+        // padding: 0 10rem;
         transform: translate(-50%, -50%);
         background-color: black;
         &-close {
           color: white;
           position: absolute;
-          right: 2px;
-          font-size: 7px;
+          right: 0.2rem;
+          font-size: 3rem;
         }
         &-card {
           display: flex;
@@ -223,7 +234,7 @@ export default {
             z-index: 1;
             color: white;
             position: relative;
-            font-size: 12px;
+            font-size: 5rem;
           }
           &-hide {
             visibility: hidden;

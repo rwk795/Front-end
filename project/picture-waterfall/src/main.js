@@ -13,6 +13,8 @@ Vue.use(animated)
 Vue.use(message)
 Vue.config.productionTip = false
 Vue.prototype.$axios = axios
+axios.defaults.baseURL = '/water_fall'
+axios.defaults.headers.post['Content-Type'] = 'application/json'
 new Vue({
   render: (h) => h(App),
   router,
